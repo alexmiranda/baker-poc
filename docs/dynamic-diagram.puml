@@ -1,0 +1,86 @@
+@startuml Account Creation
+
+skinparam linetype ortho
+skinparam Nodesep 100
+skinparam Ranksep 80
+
+!include  https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Dynamic.puml
+
+HIDE_STEREOTYPE()
+UpdateElementStyle("component", $fontColor="Black", $bgColor="GhostWhite", $borderColor="Black")
+AddRelTag("message", $sprite="&envelope-closed,scale=1.2,color=DimGrey", $legendSprite="&envelope-closed,scale=1.0,color=DimGrey")
+
+Component(\
+    $alias=bakeryController, \
+    $label="Bakery\nController")
+
+Component(\
+    $alias=createCustomer, \
+    $label="Create\nCustomer")
+
+Component(\
+    $alias=createAccount, \
+    $label="Create\nAccount")
+
+Component(\
+    $alias=issueDebitCard, \
+    $label="Issue\nDebit Card")
+
+Component(\
+    $alias=requestCaseDocuments, \
+    $label="Request\nCase Documents")
+
+Component(\
+    $alias=waitCaseDocuments, \
+    $label="Wait\nCase Documents")
+
+Component(\
+    $alias=linkCaseDocuments, \
+    $label="Link\nCase Documents")
+
+Component(\
+    $alias=notifyCustomer, \
+    $label="Notify\nCustomer")
+
+Component(\
+    $alias=deleteCustomer, \
+    $label="Delete\nCustomer")
+
+Component(\
+    $alias=deleteAccount, \
+    $label="Delete\nAccount")
+
+RelIndex(Index(), $from=bakeryController, $to=createCustomer, $label="(on NewAccountRequested)", $tags="message", $link="")
+
+RelIndex(Index(), $from=bakeryController, $to=createAccount, $label="(on CreateCustomerSuccess)", $tags="success", $link="")
+RelIndex_U(Index(), $from=bakeryController, $to=deleteCustomer, $label="(on CreateAccountFailed)", $tags="failed", $link="")
+
+RelIndex(Index(), $from=bakeryController, $to=issueDebitCard, $label="(on CreateAccountSuccess)", $tags="success", $link="")
+RelIndex_U(Index(), $from=bakeryController, $to=deleteCustomer, $label="(on IssueDebitCardFailed)", $tags="rollback", $link="")
+RelIndex_U(Index(), $from=bakeryController, $to=deleteAccount, $label="(on IssueDebitCardFailed)", $tags="rollback", $link="")
+
+RelIndex(Index(), $from=bakeryController, $to=requestCaseDocuments, $label="(on CreateAccountSuccess)", $tags="success", $link="")
+RelIndex_U(Index(), $from=bakeryController, $to=deleteCustomer, $label="(on RequestCaseDocumentsFailed)", $tags="rollback", $link="")
+RelIndex_U(Index(), $from=bakeryController, $to=deleteAccount, $label="(on RequestCaseDocumentsFailed)", $tags="rollback", $link="")
+
+RelIndex(Index(), $from=bakeryController, $to=waitCaseDocuments, $label="(on RequestCaseDocumentsSuccess, DocumentListReceived)", $tags="success", $link="")
+RelIndex_U(Index(), $from=bakeryController, $to=deleteCustomer, $label="(on WaitCaseDocumentsTimeout)", $tags="rollback", $link="")
+RelIndex_U(Index(), $from=bakeryController, $to=deleteAccount, $label="(on WaitCaseDocumentsTimeout)", $tags="rollback", $link="")
+
+RelIndex(Index(), $from=bakeryController, $to=linkCaseDocuments, $label="(on DocumentListReceived)", $tags="message", $link="")
+RelIndex_U(Index(), $from=bakeryController, $to=deleteCustomer, $label="(on LinkCaseDocumentsFailed)", $tags="rollback", $link="")
+RelIndex_U(Index(), $from=bakeryController, $to=deleteAccount, $label="(on LinkCaseDocumentsFailed)", $tags="rollback", $link="")
+
+RelIndex(Index(), $from=bakeryController, $to=notifyCustomer, $label="(on IssueDebitCardSuccess, LinkCaseDocumentsSuccess)", $tags="message", $link="")
+
+Lay_Distance(deleteAccount, bakeryController, 1)
+Lay_Distance(deleteCustomer, bakeryController, 1)
+Lay_Distance(createCustomer, bakeryController, 0)
+Lay_Distance(createAccount, bakeryController, 1)
+Lay_Distance(issueDebitCard, bakeryController, 0)
+Lay_Distance(requestCaseDocuments, bakeryController, 1)
+Lay_Distance(waitCaseDocuments, bakeryController, 0)
+Lay_Distance(linkCaseDocuments, bakeryController, 1)
+Lay_Distance(notifyCustomer, bakeryController, 0)
+
+@enduml

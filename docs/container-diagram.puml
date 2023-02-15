@@ -1,0 +1,112 @@
+@startuml Customer Onboarding
+
+skinparam linetype ortho
+skinparam Nodesep 80
+skinparam Ranksep 80
+
+!include  https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!include <cloudinsight/kafka>
+
+UpdateElementStyle("container", $fontColor="Black", $borderColor="Black", $shadowing=true)
+AddElementTag("client", $bgColor="#ff6633\LightGoldenRodYellow", $shape=EightSidedShape())
+AddElementTag("server", $bgColor="DarkSlateGrey-LightGrey")
+AddElementTag("mocks", $fontColor="DimGrey", $bgColor="GhostWhite/LightYellow", $borderColor="#d73027", $shape=RoundedBoxShape())
+AddRelTag("sync", $sprite="&transfer,scale=1.6,color=DimGrey", $legendSprite="&transfer,scale=0.9,color=DimGrey")
+AddRelTag("async", $lineStyle = DashedLine())
+AddRelTag("http", $techn="HTTPS")
+AddRelTag("kafka", $sprite="kafka{scale=0.5}", $legendSprite="kafka{scale=0.35}")
+
+System_Boundary(accountCreation, "Customer Onboarding") {
+    Container_Boundary(referenceAppContext, "Reference Application") {
+        Container(\
+            $alias=referenceApp, \
+            $label="\nAccount Creation Process", \
+            $descr="Defines a recipe for onboarding a new customer and implements all __interactions__.\n\nAlso implement a number of mock interfaces to talk to external systems in the context of the PoC.", \
+            $techn="Java, Spring Boot, Merak", \
+            $sprite="img:https://cdn.svgporn.com/logos/java.svg{scale=0.25}", \
+            $tags="client")
+        
+        Container(\
+            $alias=crm, \
+            $label="\nCustomer Relationship Management", \
+            $descr="A fictitious CRM system.", \
+            $techn="Java", \
+            $sprite="&heart,scale=5.0,color=DarkRed", \
+            $tags="mocks")
+
+        Container(\
+            $alias=coreBanking, \
+            $label="\nRetail Core Banking System", \
+            $descr="A fictitious Retail Core Banking system.", \
+            $techn="Java", \
+            $sprite="&euro,scale=5.0,color=DarkGreen", \
+            $tags="mocks")
+
+        Container(\
+            $alias=cardsIssuance, \
+            $label="\nCards Issuance System", \
+            $descr="A fictitious Card Issuance system.", \
+            $techn="Java", \
+            $sprite="&tag,scale=5.0,color=#ff6633", \
+            $tags="mocks")
+
+        Container(\
+            $alias=dms, \
+            $label="\nDocument Management System", \
+            $descr="A fictitious Document Management system.", \
+            $techn="Java", \
+            $sprite="&paperclip,scale=5.0,color=SlateGrey", \
+            $tags="mocks")
+
+        Container(\
+            $alias=notificationSystem, \
+            $label="\nCustomer Notification System", \
+            $descr="A fictitious Customer Notification system.", \
+            $techn="Java", \
+            $sprite="&fire,scale=5.0,color=BlueViolet", \
+            $tags="mocks")
+    }
+
+    Container(\
+        $alias="bakery", \
+        $label="\nBakery", \
+        $descr="A process orchestrator that manages individual __recipes__ and __recipe instances__ as well as client applications that implement them. Bakery is responsible for triggering new interactions, schedule them and keep track of all process state changes as well as handling failures.", \
+        $techn="Scala, Akka", \
+        $sprite="img:https://raw.githubusercontent.com/ing-bank/baker/master/baker-logo.png{scale=0.25}", \
+        $tags="server")
+    
+    together {
+        ContainerDb(\
+            $alias=processDb, \
+            $label="\nProcess Data", \
+            $descr="Holds process data for any recipe, e.g. recipe description, ingredients, events, logs, etc.", \
+            $techn="", \
+            $sprite="img:https://cdn.svgporn.com/logos/cassandra.svg{scale=0.35}", \
+            $tags="server")
+        
+        ContainerDb(\
+            $alias=applicationDb, \
+            $label="\nApplication Data", \
+            $descr="Holds customer, account, debit card and case documents data.", \
+            $techn="", \
+            $sprite="img:https://www.h2database.com/html/images/h2-logo-2.png{scale=0.35}", \
+            $tags="client")
+    }
+}
+
+Rel_U(referenceApp, crm, "", "HTTPS, JSON", $tags="http+sync")
+Rel_U(referenceApp, coreBanking, "", "HTTPS, JSON", $tags="http+sync")
+Rel(referenceApp, cardsIssuance, "", "HTTPS, XML", $tags="http+sync")
+BiRel_D(referenceApp, dms, "", "Kafka, Avro", $tags="kafka+async")
+Rel_D(referenceApp, notificationSystem, "", "HTTPS, JSON", $tags="http+sync")
+
+BiRel_L(referenceApp, bakery, "", "HTTPS", $tags="http+sync")
+
+Rel_D(bakery, processDb, "", "")
+Rel_D(referenceAppContext, applicationDb, "", "")
+Lay_R(processDb, applicationDb)
+Lay_Distance(bakery, processDb, 1)
+
+SHOW_LEGEND()
+
+@enduml

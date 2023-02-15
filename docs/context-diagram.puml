@@ -1,0 +1,42 @@
+@startuml Customer Onboarding
+
+skinparam linetype ortho
+skinparam Nodesep 160
+skinparam Ranksep 100
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+SHOW_PERSON_OUTLINE()
+HIDE_STEREOTYPE()
+
+UpdateElementStyle("person", $fontColor="White", $borderColor="Black",  $shadowing=true, $bgColor="DodgerBlue")
+UpdateElementStyle("system", $fontColor="Black", $borderColor="Black",  $shadowing=true, $bgColor="#ff6633\LightGoldenRodYellow")
+
+Person($alias=apiClient, $label="\nAPI Client", $descr="A Customer Onboarding Process API client application.")
+
+Person($alias=operator, $label="\nService Operator", $descr="A service operator or customer service helpdesk agent performing some troubleshooting.")
+
+Boundary(boundary, "Customer Onboarding") {
+    together {
+        System(referenceApp, "\nCustomer Onboarding Process", $sprite="&cog,scale=6,color=White", $descr="Provides service endpoint APIs and dashboards for onboarding new retail banking customers.\n\nPerforms all activities such as registering a new customer, opening a bank account, issuing debit cards, link case documents and notifying all interested parties.")
+
+        System_Ext(bakery, "\nBakery", $sprite="img:https://raw.githubusercontent.com/ing-bank/baker/master/baker-logo.png{scale=0.25}", $descr="Manages the execution of the customer onboarding flow end-to-end, but delegates the interaction steps execution to the Customer Onboarding Process Service")
+    }
+
+    together {
+        SystemDb(referenceAppDb, "\nApplication Data", $descr="Holds customer, account, debit card and case documents data.")
+
+        SystemDb_Ext(processData, "\nProcess Data", $descr="Holds process data for any recipe, e.g. recipe description, ingredients, events, logs, etc.")
+    }
+}
+
+Rel_D(apiClient, referenceApp, "Calls endpoints")
+Rel_D(operator, referenceApp, "Uses dashboard and troubleshoots")
+
+Rel(referenceApp, referenceAppDb, "Stores data")
+BiRel_R(referenceApp, bakery, "Coordinates between")
+Rel(bakery, processData, "Stores data")
+
+SHOW_LEGEND()
+
+@enduml

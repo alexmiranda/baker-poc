@@ -1,0 +1,438 @@
+@startuml Account Creation
+
+!$retryCount = 3
+
+skinparam linetype ortho
+skinparam Nodesep 80
+skinparam Ranksep 120
+
+!include  https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+!include <cloudinsight/kafka>
+
+HIDE_STEREOTYPE()
+
+UpdateElementStyle("component", $fontColor="Black", $bgColor="GhostWhite/LightYellow", $shape=RoundedBoxShape(), $shadowing=false)
+AddElementTag("spring", $sprite="img:https://cdn.svgporn.com/logos/spring-icon.svg{scale=0.2}", $legendSprite="img:https://cdn.svgporn.com/logos/spring-icon.svg{scale=0.05}")
+AddElementTag("interaction", $shape=EightSidedShape())
+AddElementTag("postfailure", $borderColor="IndianRed", $fontColor="DimGrey")
+AddElementTag("mock", $bgColor="White", $borderColor="DarkSlateGrey")
+AddRelTag("interaction", $sprite="&bolt,scale=5.0,color=YellowGreen", $legendSprite="&bolt,scale=1.0,color=YellowGreen")
+AddRelTag("fail", $sprite="&bolt,scale=5.0,color=OrangeRed", $legendSprite="&bolt,scale=1.0,color=OrangeRed")
+AddRelTag("rollback", $sprite="&action-undo,scale=5.0,color=DarkSlateGrey", $legendSprite="&action-undo,scale=1.0,color=DarkSlateGrey")
+AddRelTag("http", $sprite="&cloud,scale=4.0,color=LightGray", $legendSprite="&cloud,scale=1.0,color=LightGray")
+AddRelTag("ui", $sprite="&browser,scale=4.0,color=LightGray", $legendSprite="&browser,scale=1.0,color=LightGray")
+
+Person($alias=apiClient, $label="\nAPI Client", $descr="A Customer Onboarding Process API client application.", $sprite="robot")
+Person($alias=operator, $label="\nService Operator", $descr="A service operator or customer service helpdesk agent performing some troubleshooting.")
+
+Container_Boundary(referenceAppContext, "Customer Onboarding Process Service") {
+    Component(\
+        $alias=dashboard, \
+        $label="\nDashboard", \
+        $descr="Allows running recipe instances hosted by the application to be inspected for troubleshooting.", \
+        $techn="Java", \
+        $sprite="&dashboard,scale=5.0,color=IndianRed", \
+        $tags="client+ui")
+
+    Component(\
+        $alias=api, \
+        $label="\nAPI", \
+        $descr="Allows running recipe instances hosted by the application to be inspected for troubleshooting.", \
+        $techn="Java", \
+        $sprite="&pencil,scale=5.0,color=Indigo", \
+        $tags="client+http")
+    
+    Component(\
+        $alias=bakeryController, \
+        $label="\nBakery Controller", \
+        $descr="An HTTP adapter for Baker interactions configured to execute the Account Creation recipe.", \
+        $techn="Java", \
+        $tags="spring")
+    
+    WithoutPropertyHeader()
+    AddProperty("Required Events", "NewAccountRequested (Signal)")
+    AddProperty("Required Ingredients", "//none//")
+    AddProperty("Retry", "$retryCount")
+    AddProperty("On Success", "CreateCustomerSuccess")
+    AddProperty("On Failure", "CreateCustomerFailed")
+    AddProperty("Predecessors", "//none//")
+    AddProperty("Successors", "Create Account")
+    Component(\
+        $alias=createCustomer, \
+        $label="\nCreate Customer", \
+        $descr="Create customer interaction.\n", \
+        $techn="Java, Spring", \
+        $tags="spring+interaction")
+
+    WithoutPropertyHeader()
+    AddProperty("Required Events", "CreateCustomerFailed")
+    AddProperty("Required Ingredients", "//none//")
+    AddProperty("Retry", "0")
+    AddProperty("On Success", "PostCreateCustomerFailed")
+    AddProperty("On Failure", "//none//")
+    AddProperty("Predecessors", "Create Customer")
+    AddProperty("Successors", "//none//")
+    Component(\
+        $alias=postCreateCustomerFailed, \
+        $label="\nPost Create Customer Failed", \
+        $descr="Post Create Customer Failed interaction.\n", \
+        $techn="Java, Spring", \
+        $tags="spring+interaction+postfailure")
+
+    WithoutPropertyHeader()
+    AddProperty("Required Events", "CreateCustomerSuccess")
+    AddProperty("Required Ingredients", "customerId")
+    AddProperty("", "customerData")
+    AddProperty("Retry", "$retryCount")
+    AddProperty("On Success", "CreateAccountSuccess")
+    AddProperty("On Failure", "CreateAccountFailed")
+    AddProperty("Predecessors", "Create Customer")
+    AddProperty("Successors", "Issue Debit Card")
+    AddProperty("", "Request Case Documents")
+    AddProperty("", "Delete Customer")
+    Component(\
+        $alias=createAccount, \
+        $label="\nCreate Account", \
+        $descr="Create account interaction.\n", \
+        $techn="Java, Spring", \
+        $tags="spring+interaction")
+
+    WithoutPropertyHeader()
+    AddProperty("Required Events", "CreateAccountFailed")
+    AddProperty("Required Ingredients", "//none//")
+    AddProperty("Retry", "0")
+    AddProperty("On Success", "PostCreateAccountFailed")
+    AddProperty("On Failure", "//none//")
+    AddProperty("Predecessors", "Create Account")
+    AddProperty("Successors", "//none//")
+    Component(\
+        $alias=postCreateAccountFailed, \
+        $label="\nPost Create Account Failed", \
+        $descr="Post Create Account Failed interaction.\n", \
+        $techn="Java, Spring", \
+        $tags="spring+interaction+postfailure")
+
+    WithoutPropertyHeader()
+    AddProperty("Required Events", "CreateAccountSuccess")
+    AddProperty("Required Ingredients", "customerId")
+    AddProperty("", "accountId")
+    AddProperty("", "customerData")
+    AddProperty("Retry", "$retryCount")
+    AddProperty("On Success", "IssueDebitCardSuccess")
+    AddProperty("On Failure", "IssueDebitCardFailed")
+    AddProperty("Predecessors", "Create Account")
+    AddProperty("Successors", "Notify Customer")
+    AddProperty("", "Delete Account")
+    AddProperty("", "Delete Customer")
+    Component(\
+        $alias=issueDebitCard, \
+        $label="\nIssue Debit Card", \
+        $descr="Issue Debit Card interaction.\n", \
+        $techn="Java, Spring", \
+        $tags="spring+interaction")
+
+    WithoutPropertyHeader()
+    AddProperty("Required Events", "IssueDebitCardFailed")
+    AddProperty("Required Ingredients", "//none//")
+    AddProperty("Retry", "0")
+    AddProperty("On Success", "PostIssueDebitCardFailed")
+    AddProperty("On Failure", "//none//")
+    AddProperty("Predecessors", "Issue Debit Card")
+    AddProperty("Successors", "//none//")
+    Component(\
+        $alias=postIssueDebitCardFailed, \
+        $label="\nPost Issue Debit Card Failed", \
+        $descr="Post Issue Debit Card Failed interaction.\n", \
+        $techn="Java, Spring", \
+        $tags="spring+interaction+postfailure")
+
+    WithoutPropertyHeader()
+    AddProperty("Required Events", "CreateAccountSuccess")
+    AddProperty("Required Ingredients", "caseId")
+    AddProperty("Retry", "$retryCount")
+    AddProperty("On Success", "RequestCaseDocumentsSuccess")
+    AddProperty("On Failure", "RequestCaseDocumentsFailed")
+    AddProperty("Predecessors", "Create Account")
+    AddProperty("Successors", "Wait Case Documents")
+    AddProperty("", "Delete Account")
+    AddProperty("", "Delete Customer")
+    Component(\
+        $alias=requestCaseDocuments, \
+        $label="\nRequest Case Documents", \
+        $descr="Request Case Documents interaction.\n", \
+        $techn="Java, Spring", \
+        $tags="spring+interaction")
+
+    WithoutPropertyHeader()
+    AddProperty("Required Events", "PostRequestCaseDocumentsFailed")
+    AddProperty("Required Ingredients", "//none//")
+    AddProperty("Retry", "0")
+    AddProperty("On Success", "PostRequestCaseDocumentsFailed")
+    AddProperty("On Failure", "//none//")
+    AddProperty("Predecessors", "Request Case Documents")
+    AddProperty("Successors", "//none//")
+    Component(\
+        $alias=postRequestCaseDocumentsFailed, \
+        $label="\nPost Request Case Documents Failed", \
+        $descr="Post Request Case Documents Failed interaction.\n", \
+        $techn="Java, Spring", \
+        $tags="spring+interaction+postfailure")
+
+    WithoutPropertyHeader()
+    AddProperty("Required Events", "RequestCaseDocumentsSuccess")
+    AddProperty("", "DocumentListReceived (Signal)")
+    AddProperty("Required Ingredients", "//none//")
+    AddProperty("Retry", "1")
+    AddProperty("On Success", "WaitCaseDocumentCancelled")
+    AddProperty("On Failure", "WaitCaseDocumentsTimeout")
+    AddProperty("Predecessors", "Request Case Documents")
+    AddProperty("Successors", "Delete Account")
+    AddProperty("", "Delete Customer")
+    Component(\
+        $alias=waitCaseDocuments, \
+        $label="\nWait Case Documents", \
+        $descr="Wait Case Documents interaction.\n", \
+        $techn="Java, Spring", \
+        $tags="spring+interaction")
+
+    WithoutPropertyHeader()
+    AddProperty("Required Events", "PostWaitCaseDocumentsTimeout")
+    AddProperty("Required Ingredients", "//none//")
+    AddProperty("Retry", "0")
+    AddProperty("On Success", "PostWaitCaseDocumentsTimeout")
+    AddProperty("On Failure", "//none//")
+    AddProperty("Predecessors", "Request Case Documents")
+    AddProperty("Successors", "//none//")
+    Component(\
+        $alias=postWaitCaseDocumentsTimeout, \
+        $label="\nPost Wait Case Documents Timeout", \
+        $descr="Post Wait Case Documents Timeout interaction.\n", \
+        $techn="Java, Spring", \
+        $tags="spring+interaction+postfailure")
+
+    WithoutPropertyHeader()
+    AddProperty("Required Events", "DocumentListReceived (Signal)")
+    AddProperty("Required Ingredients", "caseId")
+    AddProperty("", "accountId")
+    AddProperty("Retry", "$retryCount")
+    AddProperty("On Success", "LinkCaseDocumentsSuccess")
+    AddProperty("On Failure", "LinkCaseDocumentsFailed")
+    AddProperty("Predecessors", "Request Case Documents")
+    AddProperty("Successors", "Notify Customer")
+    AddProperty("", "Delete Account")
+    AddProperty("", "Delete Customer")
+    Component(\
+        $alias=linkCaseDocuments, \
+        $label="\nLink Case Documents", \
+        $descr="Link Case Documents interaction.\n", \
+        $techn="Java, Spring", \
+        $tags="spring+interaction")
+
+    WithoutPropertyHeader()
+    AddProperty("Required Events", "PostLinkCaseDocumentsFailed")
+    AddProperty("Required Ingredients", "//none//")
+    AddProperty("Retry", "0")
+    AddProperty("On Success", "PostLinkCaseDocumentsFailed")
+    AddProperty("On Failure", "//none//")
+    AddProperty("Predecessors", "Link Case Documents")
+    AddProperty("Successors", "//none//")
+    Component(\
+        $alias=postLinkCaseDocumentsFailed, \
+        $label="\nPost Link Case Documents Failed", \
+        $descr="Post Link Case Documents Failed interaction.\n", \
+        $techn="Java, Spring", \
+        $tags="spring+interaction+postfailure")
+
+    WithoutPropertyHeader()
+    AddProperty("Required Events", "IssueDebitCardSuccess")
+    AddProperty("", "LinkCaseDocumentsSuccess")
+    AddProperty("Required Ingredients", "customerData")
+    AddProperty("", "accountData")
+    AddProperty("", "notifyCustomer")
+    AddProperty("Retry", "$retryCount")
+    AddProperty("On Success", "NotifyCustomerSuccess")
+    AddProperty("On Failure", "NotifyCustomerFailed")
+    AddProperty("Predecessors", "Issue Debit Card")
+    AddProperty("", "Link Case Documents")
+    AddProperty("Successors", "")
+    Component(\
+        $alias=notifyCustomer, \
+        $label="\nNotify Customer", \
+        $descr="Notify Customer interaction.\n", \
+        $techn="Java, Spring", \
+        $tags="spring+interaction")
+
+    WithoutPropertyHeader()
+    AddProperty("Required Events", "CreateAccountFailed")
+    AddProperty("", "IssueDebitCardFailed")
+    AddProperty("", "RequestCaseDocumentsFailed")
+    AddProperty("", "WaitCaseDocumentsTimeout")
+    AddProperty("", "LinkCaseDocumentsFailed")
+    AddProperty("Required Ingredients", "customerId")
+    AddProperty("Retry", "$retryCount")
+    AddProperty("On Success", "DeleteCustomerSuccess")
+    AddProperty("On Failure", "DeleteCustomerFailed")
+    AddProperty("Predecessors", "Create Account")
+    AddProperty("", "Issue Debit Card")
+    AddProperty("", "Request Case Documents")
+    AddProperty("", "Wait Case Documents")
+    AddProperty("", "Link Case Documents")
+    AddProperty("Successors", "")
+    Component(\
+        $alias=deleteCustomer, \
+        $label="\nDelete Customer", \
+        $descr="Delete Customer interaction.\n", \
+        $techn="Java, Spring", \
+        $tags="spring+interaction")
+
+    WithoutPropertyHeader()
+    AddProperty("Required Events", "IssueDebitCardFailed")
+    AddProperty("", "RequestCaseDocumentsFailed")
+    AddProperty("", "WaitCaseDocumentsTimeout")
+    AddProperty("", "LinkCaseDocumentsFailed")
+    AddProperty("Required Ingredients", "accountId")
+    AddProperty("Retry", "$retryCount")
+    AddProperty("On Success", "DeleteAccountSuccess")
+    AddProperty("On Failure", "DeleteAccountFailed")
+    AddProperty("Predecessors", "Issue Debit Card")
+    AddProperty("", "Request Case Documents")
+    AddProperty("", "Wait Case Documents")
+    AddProperty("", "Link Case Documents")
+    AddProperty("Successors", "")
+    Component(\
+        $alias=deleteAccount, \
+        $label="\nDelete Account", \
+        $descr="Delete Account interaction.\n", \
+        $techn="Java, Spring", \
+        $tags="spring+interaction")
+
+    Component(\
+        $alias=crm, \
+        $label="\nCustomer Relationship Management", \
+        $descr="A fictitious CRM system.", \
+        $techn="Java, Spring", \
+        ' $sprite="&heart,scale=5.0,color=DarkRed", \
+        $tags="spring+mock")
+
+    Component(\
+        $alias=coreBanking, \
+        $label="\nRetail Core Banking System", \
+        $descr="A fictitious Retail Core Banking system.", \
+        $techn="Java, Spring", \
+        ' $sprite="&euro,scale=5.0,color=DarkGreen", \
+        $tags="spring+mock")
+
+    Component(\
+        $alias=cardsIssuance, \
+        $label="\nCards Issuance System", \
+        $descr="A fictitious Card Issuance system.", \
+        $techn="Java, Spring", \
+        ' $sprite="&tag,scale=5.0,color=DarkOrange", \
+        $tags="spring+mock")
+
+    Component(\
+        $alias=dms, \
+        $label="\nDocument Management System", \
+        $descr="A fictitious Document Management system.", \
+        $techn="Java, Spring", \
+        ' $sprite="&paperclip,scale=5.0,color=SlateGrey", \
+        $tags="spring+mock")
+
+    Component(\
+        $alias=notificationSystem, \
+        $label="\nCustomer Notification System", \
+        $descr="A fictitious Customer Notification system.", \
+        $techn="Java, Spring", \
+        ' $sprite="&fire,scale=5.0,color=BlueViolet", \
+        $tags="spring+mock")
+}
+
+Container(\
+    $alias="bakery", \
+    $label="\nBakery", \
+    $descr="A process orchestrator that manages individual __recipes__ and __recipe instances__ as well as client applications that implement them. Bakery is responsible for triggering new interactions, schedule them and keep track of all process state changes as well as handling failures.\n", \
+    $techn="Scala, Akka", \
+    $sprite="img:https://cdn.svgporn.com/logos/akka.svg{scale=0.5}", \
+    $tags="server")
+
+ContainerDb(\
+    $alias=applicationDb, \
+    $label="\nApplication Data", \
+    $descr="Holds customer, account, debit card and case documents data.", \
+    $techn="", \
+    $sprite="img:https://www.h2database.com/html/images/h2-logo-2.png{scale=0.35}", \
+    $tags="client")
+
+ContainerDb(\
+    $alias=processDb, \
+    $label="\nProcess Data", \
+    $descr="Holds process data for any recipe, e.g. recipe description, ingredients, events, logs, etc.", \
+    $techn="", \
+    $sprite="img:https://cdn.svgporn.com/logos/cassandra.svg{scale=0.35}", \
+    $tags="server")
+
+Container_Ext($alias="smtp", $label="SMTP Server", $descr="Local STMP Server", $sprite="&envelope-closed,scale=10,color=WhiteSmoke")
+
+Rel(apiClient, api, "Uses", $tags="http")
+Rel(operator, dashboard, "Uses", $tags="ui")
+
+Rel_L(api, bakery, "", $tags="http")
+Rel_L(dashboard, bakery, "", $tags="http")
+Lay_Distance(dashboard, bakery, 2)
+
+BiRel_R(bakery, bakeryController, "synchronises", $tags="")
+Rel_D(bakery, processDb, "Stores data", $tags="")
+Lay_Distance(bakery, processDb, 2)
+
+Rel(bakeryController, createCustomer, "invokes", "in-process", $tags="interaction")
+Rel_U(bakeryController, postCreateCustomerFailed, "invokes", "in-process", $tags="fail+interaction")
+Rel(bakeryController, createAccount, "invokes", "in-process", $tags="interaction")
+Rel_U(bakeryController, postCreateAccountFailed, "invokes", "in-process", $tags="fail+interaction")
+Rel(bakeryController, issueDebitCard, "invokes", "in-process", $tags="interaction")
+Rel_U(bakeryController, postIssueDebitCardFailed, "invokes", "in-process", $tags="fail+interaction")
+Rel(bakeryController, requestCaseDocuments, "invokes", "in-process", $tags="interaction")
+Rel_U(bakeryController, postRequestCaseDocumentsFailed, "invokes", "in-process", $tags="fail+interaction")
+Rel(bakeryController, waitCaseDocuments, "invokes", "in-process", $tags="interaction")
+Rel_U(bakeryController, postWaitCaseDocumentsTimeout, "invokes", "in-process", $tags="fail+interaction")
+Rel(bakeryController, linkCaseDocuments, "invokes", "in-process", $tags="interaction")
+Rel_U(bakeryController, postLinkCaseDocumentsFailed, "invokes", "in-process", $tags="fail+interaction")
+Rel(bakeryController, notifyCustomer, "invokes", "in-process", $tags="interaction")
+Rel(bakeryController, deleteCustomer, "invokes", "in-process", $tags="rollback+interaction")
+Rel(bakeryController, deleteAccount, "invokes", "in-process", $tags="rollback+interaction")
+
+Rel(dms, bakery, "Sends documents", "", $tags="")
+
+Rel(createCustomer, crm, "", "https", $tags="http+mock")
+Rel(createAccount, coreBanking, "", "https", $tags="http+mock")
+Rel(issueDebitCard, cardsIssuance, "", "https", $tags="http+mock")
+Rel(requestCaseDocuments, dms, "", "https", $tags="http+mock")
+Rel(linkCaseDocuments, dms, "", "https", $tags="http+mock")
+Rel(notifyCustomer, notificationSystem, "", "https", $tags="http+mock")
+
+Rel(crm, applicationDb, "Stores data")
+Rel(coreBanking, applicationDb, "Stores data")
+Rel(cardsIssuance, applicationDb, "Stores data")
+Rel(dms, applicationDb, "Stores data")
+Rel(notificationSystem, smtp, "Sends emails")
+
+Lay_R(createCustomer, createAccount)
+Lay_R(createAccount, issueDebitCard)
+Lay_R(issueDebitCard, requestCaseDocuments)
+Lay_R(requestCaseDocuments, waitCaseDocuments)
+Lay_R(waitCaseDocuments, linkCaseDocuments)
+Lay_R(linkCaseDocuments, notifyCustomer)
+
+Lay_R(postCreateCustomerFailed, postCreateAccountFailed)
+Lay_R(postCreateAccountFailed, postIssueDebitCardFailed)
+Lay_R(postIssueDebitCardFailed, postRequestCaseDocumentsFailed)
+Lay_R(postRequestCaseDocumentsFailed, postWaitCaseDocumentsTimeout)
+Lay_R(postWaitCaseDocumentsTimeout, postLinkCaseDocumentsFailed)
+
+Lay_R(crm, coreBanking)
+Lay_R(coreBanking, cardsIssuance)
+Lay_R(cardsIssuance, dms)
+Lay_R(dms, notificationSystem)
+
+SHOW_LEGEND()
+
+@enduml

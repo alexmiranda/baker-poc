@@ -1,0 +1,33 @@
+@startuml Account Creation
+
+skinparam style strictuml
+skinparam ActivityBackgroundColor #ff6633
+skinparam ActivityBorderColor Black
+
+start
+
+#PaleGreen:new account requested<
+:create customer;
+:create account;
+fork
+    :issue debit card;
+fork again
+    :request case documents;
+    :wait case documents;
+    end
+
+    split
+        -[hidden]->
+        #PaleGreen:document list received<
+    split again
+        -[hidden]->
+        #PaleGreen:timeout<
+    end split
+
+    :link case documents;
+end fork
+:notify customer;
+
+stop
+
+@enduml
